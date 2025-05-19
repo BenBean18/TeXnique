@@ -20,6 +20,8 @@ leaderboards = defaultdict(dict)
 
 names = {}
 
+running = set()
+
 @app.route("/")
 def index_route():
     return redirect("/public/index.html")
@@ -74,8 +76,18 @@ def delete_route():
     game_id = request.get_json()["id"]
     try:
         games.pop(game_id)
+    except:
+        pass
+    try:
         participants.pop(game_id)
+    except:
+        pass
+    try:
         leaderboards.pop(game_id)
+    except:
+        pass
+    try:
+        running.remove(session["game_id"])
     except:
         pass
     return jsonify({'status': 'success', 'game_id': game_id})
@@ -102,6 +114,9 @@ def disconnect():
 
 @socketio.on('start', namespace='/game')
 def handle_start():
+    if session["game_id"] in running:
+        return
+    running.add(session["game_id"])
     socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": random.random()}), namespace="/game")
 
 @socketio.on('solve', namespace='/game')

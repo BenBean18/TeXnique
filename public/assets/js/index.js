@@ -565,6 +565,9 @@ $(document).ready(function() {
             return;
         }
         startGame(false, seed=json["seed"]);
+        window.onbeforeunload = function() {
+            return "Currently in a multiplayer game, reloading will erase your progress";
+        }
     });
 
     window.socket.on('solve', (data) => {
