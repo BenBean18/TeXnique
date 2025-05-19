@@ -22,9 +22,13 @@ function mobileCheck() {
   return check;
 };
 
-function shuffleArray(array) {
+function shuffleArray(array, seed = Math.random()) {
+    /**
+     * Shuffles `array` with random float `seed` in [0, 1].
+     */
+    console.log(seed);
     for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(seed * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
 }
@@ -136,13 +140,13 @@ function endGame() {
 }
 
 
-function startGame(useTimer) {
+function startGame(useTimer, seed = Math.random()) {
     problemNumber = 0;
     currentScore = 0;
     numCorrect = 0;
     oldVal = "";
     problemsOrder = [...Array(problems.length).keys()];
-    shuffleArray(problemsOrder);
+    shuffleArray(problemsOrder, seed);
     skippedProblems = [];
 
     $("#intro-window").hide();
@@ -265,6 +269,8 @@ function validateProblem() {
                 currentScore += problemPoints;
                 numCorrect += 1;
 
+                socket.emit("solve", JSON.stringify({"numCorrect": numCorrect, "score": currentScore}));
+
                 // Styling changes
                 $('#out').parent().addClass("correct");
                 $('#user-input').prop("disabled", true);
@@ -344,6 +350,132 @@ async function loadLeaderboard(timeRange) {
     }
 }
 
+async function listGames() {
+    let response = await fetch("/list", {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    let json = response.json();
+    return json;
+}
+
+async function joinGame(gameID) {
+    let response = await fetch("/join", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"game_id": gameID})
+    });
+    let json = response.json();
+    if (json["status"] === "error") {
+        window.location = "/login";
+    }
+    window.location.reload();
+}
+
+async function leaveGame() {
+    let response = await fetch("/leave", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+}
+
+async function deleteGame(gameID) {
+    let response = await fetch("/delete", {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"id": gameID})
+    });
+    renderGames();
+}
+
+async function getLeaderboard() {
+    let response = await fetch("/leaderboard", {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    let data = await response.json();
+    return data;
+}
+
+function sortedDictionaryKeysByValue(dict) {
+    /**
+     * Returns dictionary keys sorted by their values.
+     * 
+     * @param dict the dictionary
+     * 
+     * @returns dict's keys sorted by value (in descending order)
+     */
+    const items = Object.entries(dict);
+  
+    items.sort(([, valueA], [, valueB]) => valueB["score"] - valueA["score"]); // Sort in descending order
+  
+    return items.map(([k, ]) => k);
+}
+
+async function renderLeaderboard() {
+    let data = await getLeaderboard();
+    const leaderboardList = $("#leaderboard-list-multiplayer");
+    leaderboardList.empty();
+    sortedDictionaryKeysByValue(data).forEach((key) => {
+        const scoreEntry = `
+            <div class="leaderboard-entry" style="margin: 5px 0;">
+                <span class="name">${escapeHtml(window.names[key])}</span>
+                <span class="rank">${data[key]["numCorrect"]}</span>
+                <span class="score">${data[key]["score"]}</span>
+            </div>
+        `;
+        leaderboardList.append(scoreEntry);
+    });
+}
+
+async function renderGames() {
+    window.games = await listGames();
+    const gameTable = $("#gameTableBody");
+    gameTable.empty();
+    Object.keys(window.games).forEach((key) => {
+        const scoreEntry = `
+            <tr>
+              <td>${window.games[key]}</td>
+              <td><button onclick="joinGame('${key}')">Join</button></td>
+              <td><button onclick="deleteGame('${key}')">Delete</button></td>
+            </tr>
+        `;
+        gameTable.append(scoreEntry);
+    });
+    updateGame();
+}
+
+async function updateNames() {
+    let response = await fetch("/names", {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    window.names = await response.json();
+}
+
+async function updateGame() {
+    let response = await fetch("/my_game", {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    window.currentGame = await response.text();
+    document.getElementById("current-game").innerText = window.games[window.currentGame];
+}
+
 // Start by showing the intro.
 $(document).ready(function() {
     // Handlers
@@ -420,6 +552,29 @@ $(document).ready(function() {
     $("#play-again-button").click(function() {
         showIntro();
     });
+
+    window.socket = io('/game');
+
+    updateNames();
+
+    window.socket.on('start', (data) => {
+        updateNames();
+        let json = JSON.parse(data);
+        if (json["game_id"] !== window.currentGame) {
+            console.log(json["game_id"], window.currentGame);
+            return;
+        }
+        startGame(false, seed=json["seed"]);
+    });
+
+    window.socket.on('solve', (data) => {
+        updateNames();
+        let json = JSON.parse(data);
+        console.log(json);
+        renderLeaderboard();
+    });
+
+    renderGames();
     
     showIntro();
 });

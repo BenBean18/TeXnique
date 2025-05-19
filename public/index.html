@@ -38,6 +38,8 @@
   <script src="assets/js/problems.js"></script>
   <script src="assets/js/normalizations.js"></script>
   <script src="assets/js/index.js"></script>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 
 <body>
@@ -155,53 +157,113 @@
         <button id="play-again-button" class="latex-button">Play Again!</button>
       </div>
 
+      <div style="display: flex; flex-direction: row; width: 100%;">
+
+        <div id="login-view" class="view" style="margin-right: 25px; flex-grow: 1;">
+            <h2>Login</h2>
+            <form id="loginForm" action="/login" method="POST">
+              <input type="text" id="nameInput" name="name" placeholder="Enter your name" required>
+              <button type="submit">Login</button>
+            </form>
+        </div>
+        
+        <div id="join-view" class="view" style="flex-grow: 1;">
+          <h2>Join a Game</h2>
+          <table id="gameTable" style="width:50%; text-align:left;">
+            <thead>
+              <tr>
+                <th>Game Name</th>
+                <th>Join</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody id="gameTableBody">
+            </tbody>
+          </table>
+        </div>
+
+        <div style="flex-grow: 1">
+          <span>Current Game: </span>
+          <span id="current-game"></span>
+        </div>
+
+        <div id="create-view" class="view" style="margin-right: 25px; flex-grow: 1;">
+          <h2>Create Game</h2>
+          <form id="loginForm" action="/create" method="POST">
+            <input type="text" id="nameInput" name="name" placeholder="Game name" required>
+            <button type="submit">Create Game</button>
+          </form>
+      </div>
+
+        <button onclick="window.socket.emit('start')">Start Game</button>
+
+      </div>
+
       <div id="game-window">
-        <div id="top-row">
-          <span id="left-buttons">
-            <button id="skip-button" class="latex-button">Skip This Problem</button>
-            <button id="end-game-button" class="latex-button">End Game</button>
-          </span>
-          <span id="score-wrapper"> <b> Score: &nbsp; </b> <span id="score"></span></span>
-          <span id="timer-wrapper"> <b> Time: &nbsp; </b> <span id="timer"></span></span>
-        </div>
+        <div id="game-container">
+          <div id="top-row">
+            <span id="left-buttons">
+              <button id="skip-button" class="latex-button">Skip This Problem</button>
+              <button id="end-game-button" class="latex-button">End Game</button>
+            </span>
+            <span id="score-wrapper"> <b> Score: &nbsp; </b> <span id="score"></span></span>
+            <span id="timer-wrapper"> <b> Time: &nbsp; </b> <span id="timer"></span></span>
+          </div>
 
-        <br><br>
+          <br><br>
 
-        <p class="problem-header"><span id="problem-title" class="title"></span>&nbsp;<span id="problem-points"></span>
-        </p>
+          <p class="problem-header"><span id="problem-title" class="title"></span>&nbsp;<span id="problem-points"></span>
+          </p>
 
-        <p> Try to create the following formula: </p>
+          <p> Try to create the following formula: </p>
 
-        <div class="latex">
-          <div id="target"></div>
-        </div>
-
-        <br>
-
-        <p> This is what your output looks like: </p>
-
-        <div class="out-container">
           <div class="latex">
-            <div id="shadow-target"></div>
+            <div id="target"></div>
           </div>
 
-          <div class="latex out">
-            <div id="out"></div>
+          <br>
+
+          <p> This is what your output looks like: </p>
+
+          <div class="out-container">
+            <div class="latex">
+              <div id="shadow-target"></div>
+            </div>
+
+            <div class="latex out">
+              <div id="out"></div>
+            </div>
+          </div>
+
+          <br>
+
+          <p> Edit your code here: </p>
+
+          <textarea id="user-input" class="latex-source"></textarea>
+
+          <br><br>
+
+          <div id="options-container">
+            <input type="checkbox" class="checkbox" id="shadow-checkbox"></input>
+            <label id="l-shadow-checkbox" for="shadow-checkbox" tabindex="0"></label>
+            <p id="toggle-shadow-desc">Toggle Shadow</p>
           </div>
         </div>
 
-        <br>
+        
 
-        <p> Edit your code here: </p>
-
-        <textarea id="user-input" class="latex-source"></textarea>
-
-        <br><br>
-
-        <div id="options-container">
-          <input type="checkbox" class="checkbox" id="shadow-checkbox"></input>
-          <label id="l-shadow-checkbox" for="shadow-checkbox" tabindex="0"></label>
-          <p id="toggle-shadow-desc">Toggle Shadow</p>
+        <div id="multiplayer-container">
+          <div id="leaderboard-section">
+            <h2>Leaderboard</h2>
+            <div class="leaderboard-entry">
+              <span class="name">Name</span>
+              <span class="name">#</span>
+              <span class="score">Score</span>
+            </div>
+            <div id="leaderboard-list-multiplayer">
+              <!-- Leaderboard entries will be populated here -->
+            </div>
+          </div>
         </div>
       </div>
     </div>

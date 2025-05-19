@@ -1,0 +1,13 @@
+- Pick a username
+- Create a game, have ID returned
+- Join a game with specific ID and listen to game events
+    - Listen to events:
+        - start: game is started (should be synced for everyone)
+        - solve: someone else solved a problem, reports their current problem and score
+    - Publish game events:
+        - solve: i solved a problem
+- Sync problems between everyone in a group (maybe not, according to sid this wasn't in original multiplayer)
+    - Leave a toggle?
+- Start at the same time
+- View others' current problem and their current score
+- Send score and problem when completed

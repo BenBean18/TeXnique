@@ -99,7 +99,7 @@ main {
 #score-wrapper {
 	display: inline-block;
   	width: 80px;
-  	margin-left: calc(50% - 315px);
+  	margin-left: calc(50% - 200px);
 }
 
 #timer-wrapper {
@@ -150,7 +150,7 @@ main {
 }
 
 #container {
-	width: 70%;
+	width: 90%;
 	margin-top: 50px;
 	margin-left: auto;
 	margin-right: auto;
@@ -334,4 +334,24 @@ label {
     padding: 8px 16px;
     font-size: 16px;
     cursor: pointer;
+}
+
+#game-window {
+	display: flex;
+	flex-grow: 1;
+	flex-direction: row;
+}
+
+#game-container {
+	padding-right: 20px;
+	display: block;
+	flex: 2;
+}
+
+#multiplayer-container {
+	flex: 1;
+}
+
+#login-view {
+	margin-bottom: 50px;
 }
