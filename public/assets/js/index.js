@@ -476,6 +476,18 @@ async function updateGame() {
     document.getElementById("current-game").innerText = window.games[window.currentGame];
 }
 
+async function renderName() {
+    let response = await fetch("/my_name", {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    let name = await response.text();
+    console.log(name);
+    document.getElementById("username").innerText = name;
+}
+
 // Start by showing the intro.
 $(document).ready(function() {
     // Handlers
@@ -580,4 +592,6 @@ $(document).ready(function() {
     renderGames();
     
     showIntro();
+
+    renderName();
 });

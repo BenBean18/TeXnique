@@ -48,7 +48,17 @@ def list_route():
 
 @app.route("/my_game", methods=["GET"])
 def my_game_route():
-    return session["game_id"]
+    try:
+        return session["game_id"]
+    except:
+        return ""
+
+@app.route("/my_name", methods=["GET"])
+def my_name_route():
+    try:
+        return names[session["id"]]
+    except:
+        return ""
 
 @app.route("/join", methods=["POST"])
 def join_route():
