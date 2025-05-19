@@ -22,13 +22,26 @@ function mobileCheck() {
   return check;
 };
 
+function splitmix32(a) {
+    return function() {
+        a |= 0;
+        a = a + 0x9e3779b9 | 0;
+        let t = a ^ a >>> 16;
+        t = Math.imul(t, 0x21f0aaad);
+        t = t ^ t >>> 15;
+        t = Math.imul(t, 0x735a2d97);
+        return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+    }
+}
+
 function shuffleArray(array, seed = Math.random()) {
     /**
      * Shuffles `array` with random float `seed` in [0, 1].
      */
     console.log(seed);
+    const prng = splitmix32((seed*2**32)>>>0)
     for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(seed * (i + 1));
+        const j = Math.floor(prng() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
 }
