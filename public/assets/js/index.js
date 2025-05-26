@@ -153,8 +153,10 @@ function endGame() {
 }
 
 
-function startGame(useTimer, seed = Math.random()) {
-    problemNumber = 0;
+function startGame(useTimer, seed = Math.random(), reset = true) {
+    if (reset) {
+        problemNumber = 0;
+    }
     currentScore = 0;
     numCorrect = 0;
     oldVal = "";
@@ -282,7 +284,7 @@ function validateProblem() {
                 currentScore += problemPoints;
                 numCorrect += 1;
 
-                socket.emit("solve", JSON.stringify({"numCorrect": numCorrect, "score": currentScore}));
+                socket.emit("solve", JSON.stringify({"latestProblemDone": problemNumber, "points": problemPoints, "skip": false}));
 
                 // Styling changes
                 $('#out').parent().addClass("correct");
@@ -485,7 +487,13 @@ async function updateGame() {
             'Content-Type': 'application/json'
         }
     });
-    window.currentGame = await response.text();
+    let j = await response.json();
+    window.currentGame = j["gameId"];
+    if (j["running"] === true) {
+        problemNumber = j["latestProblemDone"];
+        startGame(false, seed=j["seed"], false);
+        renderLeaderboard();
+    }
     document.getElementById("current-game").innerText = window.games[window.currentGame];
 }
 
@@ -522,6 +530,7 @@ $(document).ready(function() {
 
     $("#skip-button").click(function() {
         skippedProblems.push(problemNumber - 1);
+        socket.emit("solve", JSON.stringify({"latestProblemDone": problemNumber, "points": 0, "skip": true}));
         loadProblem();
     });
 
@@ -582,6 +591,12 @@ $(document).ready(function() {
 
     updateNames();
 
+    renderGames();
+    
+    showIntro();
+
+    renderName();
+
     window.socket.on('start', (data) => {
         updateNames();
         let json = JSON.parse(data);
@@ -590,9 +605,6 @@ $(document).ready(function() {
             return;
         }
         startGame(false, seed=json["seed"]);
-        window.onbeforeunload = function() {
-            return "Currently in a multiplayer game, reloading will erase your progress";
-        }
     });
 
     window.socket.on('solve', (data) => {
@@ -601,10 +613,4 @@ $(document).ready(function() {
         console.log(json);
         renderLeaderboard();
     });
-
-    renderGames();
-    
-    showIntro();
-
-    renderName();
 });

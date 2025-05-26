@@ -12,11 +12,13 @@ app.secret_key = "correcthorsebatterystaple"
 
 socketio = SocketIO(app)
 
-games = {}
+games = {"test-uuid": "Test Game"}
 
 participants = defaultdict(set)
 
 leaderboards = defaultdict(dict)
+
+seeds = {}
 
 names = {}
 
@@ -46,12 +48,20 @@ def create_route():
 def list_route():
     return jsonify(games)
 
+@app.route("/seeds", methods=["GET"])
+def seeds_route():
+    return jsonify(seeds)
+
 @app.route("/my_game", methods=["GET"])
 def my_game_route():
     try:
-        return session["game_id"]
+        game_id = session["game_id"]
     except:
         return ""
+    if game_id in running:
+        return jsonify({"gameId": game_id, "running": True, "seed": seeds[game_id], "latestProblemDone": leaderboards[game_id][session["id"]]["latestProblemDone"]})
+    else:
+        return jsonify({"gameId": game_id, "running": False})
 
 @app.route("/my_name", methods=["GET"])
 def my_name_route():
@@ -67,7 +77,7 @@ def join_route():
     game_id = request.get_json()["game_id"]
     session["game_id"] = game_id
     participants[game_id].add(session["id"])
-    leaderboards[game_id][session["id"]] = 0
+    leaderboards[game_id][session["id"]] = {"score": 0, "numCorrect": 0, "latestProblemDone": 0}
     return jsonify({'status': 'success', 'game_id': games[game_id]})
 
 @app.route("/leave", methods=["POST"])
@@ -104,7 +114,7 @@ def delete_route():
 
 @app.route("/participants", methods=["GET"])
 def participants_route():
-    return jsonify(participants)
+    return jsonify({k: list(v) for k, v in participants.items()})
 
 @app.route("/names", methods=["GET"])
 def names_route():
@@ -127,14 +137,18 @@ def handle_start():
     if session["game_id"] in running:
         return
     running.add(session["game_id"])
-    socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": random.random()}), namespace="/game")
+    seed = random.random()
+    seeds[session["game_id"]] = seed
+    socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": seed}), namespace="/game")
 
 @socketio.on('solve', namespace='/game')
 def handle_solve(data):
     j = json.loads(data)
     game_id = session["game_id"]
-    leaderboards[game_id][session["id"]] = {"score": j["score"], "numCorrect": j["numCorrect"]}
-    socketio.emit('solve', json.dumps({"game_id": session["game_id"], "user_id": session["id"], "numCorrect": j["numCorrect"], "score": j["score"]}), namespace="/game")
+    leaderboards[game_id][session["id"]]["score"] += j["points"]
+    leaderboards[game_id][session["id"]]["numCorrect"] += 1 if not j["skip"] else 0
+    leaderboards[game_id][session["id"]]["latestProblemDone"] = j["latestProblemDone"]
+    socketio.emit('solve', json.dumps({"game_id": session["game_id"], "user_id": session["id"], "numCorrect": leaderboards[game_id][session["id"]]["numCorrect"], "score": leaderboards[game_id][session["id"]]["score"]}), namespace="/game")
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=8080, debug=True)
