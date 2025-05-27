@@ -292,7 +292,7 @@ function validateProblem() {
                 $("#score").text(currentScore);
 
                 // Load new problem
-                setTimeout(loadProblem, 1500);
+                setTimeout(loadProblem, 0);
             }
         });
     });
@@ -446,6 +446,10 @@ async function renderLeaderboard() {
             <div class="leaderboard-entry" style="margin: 5px 0;">
                 <span class="name">${escapeHtml(window.names[key])}</span>
                 <span class="rank">${data[key]["numCorrect"]}</span>
+                <div style="justify-content: left; gap: 2px;">
+                    <span class="rank problem-time" start="${data[key]["timeStarted"]}" style="flex-shrink:1;">0</span>
+                    <span>on #${data[key]["latestProblemDone"]+1}</span>
+                </div>
                 <span class="score">${data[key]["score"]}</span>
             </div>
         `;
@@ -488,7 +492,7 @@ async function updateGame() {
         }
     });
     let j = await response.json();
-    window.currentGame = j["gameId"];
+    window.currentGame = j["game_id"];
     if (j["running"] === true) {
         problemNumber = j["latestProblemDone"];
         startGame(false, seed=j["seed"], false);
@@ -596,6 +600,14 @@ $(document).ready(function() {
     showIntro();
 
     renderName();
+
+    setInterval(function() {
+        Array.prototype.forEach.call(document.getElementsByClassName("problem-time"), function(timer) {
+            let startDate = new Date(parseInt(timer.getAttribute("start")) * 1000);
+            let elapsed = Math.round((Date.now() - startDate) / 100) / 10;
+            timer.innerText = `${elapsed}`;
+        });
+    }, 100);
 
     window.socket.on('start', (data) => {
         updateNames();

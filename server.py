@@ -5,6 +5,7 @@ from flask_socketio import SocketIO
 from collections import defaultdict
 import json
 import random
+import time
 
 app = Flask(__name__, static_folder="public/")
 
@@ -12,7 +13,7 @@ app.secret_key = "correcthorsebatterystaple"
 
 socketio = SocketIO(app)
 
-games = {"test-uuid": "Test Game"}
+games = {}
 
 participants = defaultdict(set)
 
@@ -21,6 +22,8 @@ leaderboards = defaultdict(dict)
 seeds = {}
 
 names = {}
+
+creators = {}
 
 running = set()
 
@@ -40,9 +43,13 @@ def login_route():
 
 @app.route("/create", methods=["POST"])
 def create_route():
+    if "id" not in session.keys():
+        return Response("Error: must log in first", status=400, mimetype='text/plain')
+    user_id = session["id"]
     game_id = str(uuid.uuid4())
     games[game_id] = request.form.get("name")
-    return redirect("/")
+    creators[game_id] = user_id
+    return redirect("/public/index.html")
 
 @app.route("/list", methods=["GET"])
 def list_route():
@@ -59,9 +66,9 @@ def my_game_route():
     except:
         return ""
     if game_id in running:
-        return jsonify({"gameId": game_id, "running": True, "seed": seeds[game_id], "latestProblemDone": leaderboards[game_id][session["id"]]["latestProblemDone"]})
+        return jsonify({"game_id": game_id, "running": True, "seed": seeds[game_id], "latestProblemDone": leaderboards[game_id][session["id"]]["latestProblemDone"]})
     else:
-        return jsonify({"gameId": game_id, "running": False})
+        return jsonify({"game_id": game_id, "running": False})
 
 @app.route("/my_name", methods=["GET"])
 def my_name_route():
@@ -77,8 +84,8 @@ def join_route():
     game_id = request.get_json()["game_id"]
     session["game_id"] = game_id
     participants[game_id].add(session["id"])
-    leaderboards[game_id][session["id"]] = {"score": 0, "numCorrect": 0, "latestProblemDone": 0}
-    return jsonify({'status': 'success', 'game_id': games[game_id]})
+    leaderboards[game_id][session["id"]] = {"score": 0, "numCorrect": 0, "latestProblemDone": 0, "timeStarted": 0}
+    return jsonify({'status': 'success', 'game_id': game_id})
 
 @app.route("/leave", methods=["POST"])
 def leave_route():
@@ -93,7 +100,15 @@ def leave_route():
 
 @app.route("/delete", methods=["DELETE"])
 def delete_route():
+    if "id" not in session.keys():
+        return Response("{'status': 'error', 'message': 'must log in first'}", status=400, mimetype='application/json')
+    user_id = session["id"]
     game_id = request.get_json()["id"]
+    try:
+        if user_id != creators[game_id]:
+            return jsonify({'status': 'error', 'message': 'you didn\'t create the game'})
+    except:
+        return Response("{'status': 'error', 'message': 'game has no creator'}", status=400, mimetype='application/json')
     try:
         games.pop(game_id)
     except:
@@ -104,6 +119,10 @@ def delete_route():
         pass
     try:
         leaderboards.pop(game_id)
+    except:
+        pass
+    try:
+        creators.pop(game_id)
     except:
         pass
     try:
@@ -136,6 +155,8 @@ def disconnect():
 def handle_start():
     if session["game_id"] in running:
         return
+    if creators[session["game_id"]] != session["id"]:
+        return
     running.add(session["game_id"])
     seed = random.random()
     seeds[session["game_id"]] = seed
@@ -148,6 +169,7 @@ def handle_solve(data):
     leaderboards[game_id][session["id"]]["score"] += j["points"]
     leaderboards[game_id][session["id"]]["numCorrect"] += 1 if not j["skip"] else 0
     leaderboards[game_id][session["id"]]["latestProblemDone"] = j["latestProblemDone"]
+    leaderboards[game_id][session["id"]]["timeStarted"] = time.time()
     socketio.emit('solve', json.dumps({"game_id": session["game_id"], "user_id": session["id"], "numCorrect": leaderboards[game_id][session["id"]]["numCorrect"], "score": leaderboards[game_id][session["id"]]["score"]}), namespace="/game")
 
 if __name__ == "__main__":
