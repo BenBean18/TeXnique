@@ -365,7 +365,7 @@ async function loadLeaderboard(timeRange) {
     }
 }
 
-async function listGames() {
+async function getGames() {
     let response = await fetch("/list", {
         method: 'GET',
         headers: {
@@ -422,6 +422,17 @@ async function getLeaderboard() {
     return data;
 }
 
+async function getParticipants() {
+    let response = await fetch("/participants", {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    let json = response.json();
+    return json;
+}
+
 function sortedDictionaryKeysByValue(dict) {
     /**
      * Returns dictionary keys sorted by their values.
@@ -442,6 +453,9 @@ async function renderLeaderboard() {
     const leaderboardList = $("#leaderboard-list-multiplayer");
     leaderboardList.empty();
     sortedDictionaryKeysByValue(data).forEach((key) => {
+        if (data[key]["numCorrect"] <= 0) {
+            return;
+        }
         const scoreEntry = `
             <div class="leaderboard-entry" style="margin: 5px 0;">
                 <span class="name">${escapeHtml(window.names[key])}</span>
@@ -458,13 +472,16 @@ async function renderLeaderboard() {
 }
 
 async function renderGames() {
-    window.games = await listGames();
+    window.games = await getGames();
+    window.participants = await getParticipants();
+    await updateNames();
     const gameTable = $("#gameTableBody");
     gameTable.empty();
     Object.keys(window.games).forEach((key) => {
+        const usersInGame = window.participants[key].map((userId) => {return escapeHtml(window.names[userId])}).join(", ");
         const scoreEntry = `
             <tr>
-              <td>${window.games[key]}</td>
+              <td>${escapeHtml(window.games[key])}: <i>${usersInGame}</i></td>
               <td><button onclick="joinGame('${key}')">Join</button></td>
               <td><button onclick="deleteGame('${key}')">Delete</button></td>
             </tr>
@@ -624,5 +641,9 @@ $(document).ready(function() {
         let json = JSON.parse(data);
         console.log(json);
         renderLeaderboard();
+    });
+
+    window.socket.on('join', (data) => {
+        renderGames();
     });
 });

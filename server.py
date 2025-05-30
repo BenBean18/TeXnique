@@ -49,6 +49,7 @@ def create_route():
     game_id = str(uuid.uuid4())
     games[game_id] = request.form.get("name")
     creators[game_id] = user_id
+    participants[game_id] = set()
     return redirect("/public/index.html")
 
 @app.route("/list", methods=["GET"])
@@ -79,12 +80,13 @@ def my_name_route():
 
 @app.route("/join", methods=["POST"])
 def join_route():
-    if "id" not in session.keys():
+    if "id" not in session.keys() or session["id"] not in names:
         return Response("{'status': 'error', 'message': 'must log in first'}", status=400, mimetype='application/json')
     game_id = request.get_json()["game_id"]
     session["game_id"] = game_id
     participants[game_id].add(session["id"])
     leaderboards[game_id][session["id"]] = {"score": 0, "numCorrect": 0, "latestProblemDone": 0, "timeStarted": 0}
+    socketio.emit('join', json.dumps({"game_id": session["game_id"], "user": session["id"]}), namespace="/game")
     return jsonify({'status': 'success', 'game_id': game_id})
 
 @app.route("/leave", methods=["POST"])

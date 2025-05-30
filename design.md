@@ -18,15 +18,18 @@ Done:
 - [x] Only allow person who created game to start it
 - [x] Only allow person who created game to delete it
 - [x] View others' current problem and time spent so far
+- [x] Allow viewing who is currently in a game
 
 TODO:
 - [ ] Make multiplayer its own button
 - [ ] Make it look nicer
-- [ ] Allow viewing who has currently joined a game
-- [ ] Timed mode
+- [ ] Don't allow users to join multiple games
+- [ ] Timed mode / a way to end the game for everyone
 - [ ] At end of game, show time it took everyone for each individual problem
 - [ ] Add more problems
 - [ ] Make deleting a game actually end it for everyone
+- [ ] Visible feedback for when an action fails (e.g. create, start, delete) instead of silent failure
+- [ ] Allow going back to view previous problems you missed
 
 - [ ] Server restart = logged out, need a more permanent storage method
 - [ ] Usernames can be duplicated + no way to prove authentication
