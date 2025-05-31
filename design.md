@@ -31,6 +31,7 @@ TODO:
 - [ ] Add more problems
 - [ ] Make deleting a game actually end it for everyone
 - [ ] Visible feedback for when an action fails (e.g. create, start, delete) instead of silent failure
+    - [ ] Move start to a request instead of a socket message
 - [ ] Allow going back to view previous problems you missed
 
 - [ ] Server restart = logged out, need a more permanent storage method

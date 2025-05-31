@@ -218,4 +218,4 @@ def end_checker(hz = 2):
 if __name__ == "__main__":
     checker = threading.Thread(target=end_checker, daemon=True)
     checker.start()
-    socketio.run(app, host="0.0.0.0", port=8080, debug=True)
+    socketio.run(app, host="0.0.0.0", port=8080)
