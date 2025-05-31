@@ -517,7 +517,7 @@ async function updateGame() {
         problemNumber = j["latestProblemDone"];
         startGame(false, seed=j["seed"], false);
         setInterval(function() {
-            displayTime(Math.round((new Date(parseFloat(json["endTime"]) * 1000) - Date.now()) / 100) / 10);
+            displayTime(Math.round((new Date(parseFloat(j["endTime"]) * 1000) - Date.now()) / 100) / 10);
         }, 100);
         $("#end-game-button").off("click");
         renderLeaderboard();
