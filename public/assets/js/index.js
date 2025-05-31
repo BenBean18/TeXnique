@@ -104,7 +104,7 @@ function showIntro() {
     $("#container").show();
 }
 
-function endGame() {
+function endGame(leaderboard=true) {
     clearTimeout(gameTimer);
 
     $("#intro-window").hide();
@@ -117,7 +117,9 @@ function endGame() {
     $("#ending-text").text(endingText);
     
     // Load initial leaderboard
-    loadLeaderboard('today');
+    if (leaderboard) {
+        loadLeaderboard('today');
+    }
     
     skippedProblems.forEach(idx => {
       let target = problems[problemsOrder[idx % problems.length]];
@@ -448,20 +450,21 @@ function sortedDictionaryKeysByValue(dict) {
     return items.map(([k, ]) => k);
 }
 
-async function renderLeaderboard() {
+async function renderLeaderboard(selector="#leaderboard-list-multiplayer", timer=true) {
     let data = await getLeaderboard();
-    const leaderboardList = $("#leaderboard-list-multiplayer");
+    const leaderboardList = $(selector);
     leaderboardList.empty();
     sortedDictionaryKeysByValue(data).forEach((key) => {
         if (data[key]["numCorrect"] <= 0) {
             return;
         }
+        const startData = `start="${data[key]["timeStarted"]}"`;
         const scoreEntry = `
             <div class="leaderboard-entry" style="margin: 5px 0;">
                 <span class="name">${escapeHtml(window.names[key])}</span>
                 <span class="rank">${data[key]["numCorrect"]}</span>
                 <div style="justify-content: left; gap: 2px;">
-                    <span class="rank problem-time" start="${data[key]["timeStarted"]}" style="flex-shrink:1;">0</span>
+                    <span class="rank problem-time" ${timer ? startData : ""} style="flex-shrink:1;">0</span>
                     <span>on #${data[key]["latestProblemDone"]+1}</span>
                 </div>
                 <span class="score">${data[key]["score"]}</span>
@@ -513,6 +516,10 @@ async function updateGame() {
     if (j["running"] === true) {
         problemNumber = j["latestProblemDone"];
         startGame(false, seed=j["seed"], false);
+        setInterval(function() {
+            displayTime(Math.round((new Date(parseFloat(json["endTime"]) * 1000) - Date.now()) / 100) / 10);
+        }, 100);
+        $("#end-game-button").off("click");
         renderLeaderboard();
     }
     document.getElementById("current-game").innerText = window.games[window.currentGame];
@@ -634,6 +641,10 @@ $(document).ready(function() {
             return;
         }
         startGame(false, seed=json["seed"]);
+        setInterval(function() {
+            displayTime(Math.round((new Date(parseFloat(json["endTime"]) * 1000) - Date.now()) / 100) / 10);
+        }, 100);
+        $("#end-game-button").off("click");
     });
 
     window.socket.on('solve', (data) => {
@@ -645,5 +656,15 @@ $(document).ready(function() {
 
     window.socket.on('join', (data) => {
         renderGames();
+    });
+
+    window.socket.on('end', (data) => {
+        let json = JSON.parse(data);
+        console.log("End event received with data", data);
+        if (json["game_id"] === window.currentGame) {
+            endGame(false);
+            $("#today-scores, #month-scores, #all-time-scores").hide();
+            renderLeaderboard(selector="#leaderboard-list", timer=false);
+        }
     });
 });

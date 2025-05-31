@@ -6,6 +6,7 @@ from collections import defaultdict
 import json
 import random
 import time
+import threading
 
 app = Flask(__name__, static_folder="public/")
 
@@ -26,6 +27,10 @@ names = {}
 creators = {}
 
 running = set()
+
+times = defaultdict(lambda: float("inf"))
+
+end_times = defaultdict(lambda: float("inf"))
 
 @app.route("/")
 def index_route():
@@ -50,6 +55,14 @@ def create_route():
     games[game_id] = request.form.get("name")
     creators[game_id] = user_id
     participants[game_id] = set()
+    if "time" in request.form.keys():
+        # time in seconds that game should last
+        try:
+            times[game_id] = float(request.form.get("time"))
+        except:
+            times[game_id] = float("inf")
+    else:
+        times[game_id] = float("inf")
     return redirect("/public/index.html")
 
 @app.route("/list", methods=["GET"])
@@ -67,7 +80,7 @@ def my_game_route():
     except:
         return ""
     if game_id in running:
-        return jsonify({"game_id": game_id, "running": True, "seed": seeds[game_id], "latestProblemDone": leaderboards[game_id][session["id"]]["latestProblemDone"]})
+        return jsonify({"game_id": game_id, "running": True, "seed": seeds[game_id], "latestProblemDone": leaderboards[game_id][session["id"]]["latestProblemDone"], "endTime": end_times[game_id]})
     else:
         return jsonify({"game_id": game_id, "running": False})
 
@@ -84,6 +97,11 @@ def join_route():
         return Response("{'status': 'error', 'message': 'must log in first'}", status=400, mimetype='application/json')
     game_id = request.get_json()["game_id"]
     session["game_id"] = game_id
+    for game in participants:
+        try:
+            participants[game].remove(session["id"])
+        except:
+            pass
     participants[game_id].add(session["id"])
     leaderboards[game_id][session["id"]] = {"score": 0, "numCorrect": 0, "latestProblemDone": 0, "timeStarted": 0}
     socketio.emit('join', json.dumps({"game_id": session["game_id"], "user": session["id"]}), namespace="/game")
@@ -128,9 +146,13 @@ def delete_route():
     except:
         pass
     try:
-        running.remove(session["game_id"])
+        running.remove(game_id)
     except:
         pass
+    try: end_times.pop(game_id)
+    except KeyError: pass
+    try: times.pop(game_id)
+    except KeyError: pass
     return jsonify({'status': 'success', 'game_id': game_id})
 
 @app.route("/participants", methods=["GET"])
@@ -153,6 +175,15 @@ def connect():
 def disconnect():
     print(f'Client disconnected')
 
+def end_game(game_id: str):
+    try: running.remove(game_id)
+    except KeyError: pass
+    try: end_times.pop(game_id)
+    except KeyError: pass
+    try: times.pop(game_id)
+    except KeyError: pass
+    socketio.emit('end', json.dumps({"game_id": game_id}), namespace="/game")
+
 @socketio.on('start', namespace='/game')
 def handle_start():
     if session["game_id"] in running:
@@ -162,10 +193,13 @@ def handle_start():
     running.add(session["game_id"])
     seed = random.random()
     seeds[session["game_id"]] = seed
-    socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": seed}), namespace="/game")
+    end_times[session["game_id"]] = times[session["game_id"]] + time.time()
+    socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": seed, "endTime": end_times[session["game_id"]]}), namespace="/game")
 
 @socketio.on('solve', namespace='/game')
 def handle_solve(data):
+    if session["game_id"] not in running:
+        return
     j = json.loads(data)
     game_id = session["game_id"]
     leaderboards[game_id][session["id"]]["score"] += j["points"]
@@ -174,5 +208,14 @@ def handle_solve(data):
     leaderboards[game_id][session["id"]]["timeStarted"] = time.time()
     socketio.emit('solve', json.dumps({"game_id": session["game_id"], "user_id": session["id"], "numCorrect": leaderboards[game_id][session["id"]]["numCorrect"], "score": leaderboards[game_id][session["id"]]["score"]}), namespace="/game")
 
+def end_checker(hz = 2):
+    while True:
+        for game_id in list(end_times.keys()):
+            if time.time() >= end_times[game_id]:
+                end_game(game_id)
+        time.sleep(1 / hz)
+
 if __name__ == "__main__":
+    checker = threading.Thread(target=end_checker, daemon=True)
+    checker.start()
     socketio.run(app, host="0.0.0.0", port=8080, debug=True)

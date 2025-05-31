@@ -9,6 +9,7 @@ Done:
         - [x] solve: i solved a problem
 - [x] Sync problems between everyone in a group
     - [ ] Leave a toggle to disable this?
+    - [ ] Toggle to disable skipping?
 - [x] Start at the same time
 - [x] View others' current score
 - [x] Send score and problem when completed
@@ -19,12 +20,13 @@ Done:
 - [x] Only allow person who created game to delete it
 - [x] View others' current problem and time spent so far
 - [x] Allow viewing who is currently in a game
+- [x] Don't allow users to join multiple games
+- [x] Timed mode, ends simultaneously for everyone
+- [x] Show leaderboard at end
 
 TODO:
 - [ ] Make multiplayer its own button
 - [ ] Make it look nicer
-- [ ] Don't allow users to join multiple games
-- [ ] Timed mode / a way to end the game for everyone
 - [ ] At end of game, show time it took everyone for each individual problem
 - [ ] Add more problems
 - [ ] Make deleting a game actually end it for everyone
