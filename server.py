@@ -215,6 +215,11 @@ def end_checker(hz = 2):
                 end_game(game_id)
         time.sleep(1 / hz)
 
+def create_app():
+    checker = threading.Thread(target=end_checker, daemon=True)
+    checker.start()
+    return app
+
 if __name__ == "__main__":
     checker = threading.Thread(target=end_checker, daemon=True)
     checker.start()
