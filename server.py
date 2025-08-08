@@ -184,17 +184,18 @@ def end_game(game_id: str):
     except KeyError: pass
     socketio.emit('end', json.dumps({"game_id": game_id}), namespace="/game")
 
-@socketio.on('start', namespace='/game')
+@app.route("/start", methods=["POST"])
 def handle_start():
     if session["game_id"] in running:
-        return
+        return jsonify({'status': 'error', 'message': 'the game has already been started'})
     if creators[session["game_id"]] != session["id"]:
-        return
+        return jsonify({'status': 'error', 'message': 'you didn\'t create the game'})
     running.add(session["game_id"])
     seed = random.random()
     seeds[session["game_id"]] = seed
     end_times[session["game_id"]] = times[session["game_id"]] + time.time()
-    socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": seed, "endTime": end_times[session["game_id"]]}), namespace="/game")
+    socketio.emit('start', json.dumps({"game_id": session["game_id"], "seed": seed, "endTime": 0 if end_times[session["game_id"]] == float("inf") else end_times[session["game_id"]]}), namespace="/game")
+    return jsonify({'status': 'success', 'message': 'yay'})
 
 @socketio.on('solve', namespace='/game')
 def handle_solve(data):

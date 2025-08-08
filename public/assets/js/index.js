@@ -374,7 +374,7 @@ async function getGames() {
             'Content-Type': 'application/json'
         }
     });
-    let json = response.json();
+    let json = await response.json();
     return json;
 }
 
@@ -386,7 +386,7 @@ async function joinGame(gameID) {
         },
         body: JSON.stringify({"game_id": gameID})
     });
-    let json = response.json();
+    let json = await response.json();
     if (json["status"] === "error") {
         window.location = "/login";
     }
@@ -516,6 +516,9 @@ async function updateGame() {
     if (j["running"] === true) {
         problemNumber = j["latestProblemDone"];
         startGame(false, seed=j["seed"], false);
+        if (j["endTime"] == 0) {
+            j["endTime"] = Infinity;
+        }
         setInterval(function() {
             displayTime(Math.round((new Date(parseFloat(j["endTime"]) * 1000) - Date.now()) / 100) / 10);
         }, 100);
@@ -535,6 +538,19 @@ async function renderName() {
     let name = await response.text();
     console.log(name);
     document.getElementById("username").innerText = name;
+}
+
+async function sendStartRequest() {
+    let response = await fetch("/start", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    let json = await response.json();
+    if (json["status"] === "error") {
+        alert(json["message"]);
+    }
 }
 
 // Start by showing the intro.
@@ -641,6 +657,9 @@ $(document).ready(function() {
             return;
         }
         startGame(false, seed=json["seed"]);
+        if (json["endTime"] == 0) {
+            json["endTime"] = Infinity;
+        }
         setInterval(function() {
             displayTime(Math.round((new Date(parseFloat(json["endTime"]) * 1000) - Date.now()) / 100) / 10);
         }, 100);
