@@ -388,7 +388,8 @@ async function joinGame(gameID) {
     });
     let json = await response.json();
     if (json["status"] === "error") {
-        window.location = "/login";
+        alert("Error: must log in first to join a game");
+        return;
     }
     window.location.reload();
 }
@@ -410,8 +411,27 @@ async function deleteGame(gameID) {
         },
         body: JSON.stringify({"id": gameID})
     });
+    let json = await response.json();
+    if (json["status"] === "error") {
+        alert(`Error: ${json["message"]}`);
+    }
     renderGames();
 }
+
+async function sendEndRequest() {
+    let response = await fetch("/end", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    let json = await response.json();
+    if (json["status"] === "error") {
+        alert(`Error: ${json["message"]}`);
+    }
+    renderGames();
+}
+
 
 async function getLeaderboard() {
     let response = await fetch("/leaderboard", {
@@ -464,7 +484,7 @@ async function renderLeaderboard(selector="#leaderboard-list-multiplayer", timer
                 <span class="name">${escapeHtml(window.names[key])}</span>
                 <span class="rank">${data[key]["numCorrect"]}</span>
                 <div style="justify-content: left; gap: 2px;">
-                    <span class="rank problem-time" ${timer ? startData : ""} style="flex-shrink:1;">0</span>
+                    <span class="rank problem-time" ${startData} style="flex-shrink:1;">0</span>
                     <span>on #${data[key]["latestProblemDone"]+1}</span>
                 </div>
                 <span class="score">${data[key]["score"]}</span>
@@ -512,11 +532,16 @@ async function updateGame() {
         }
     });
     let j = await response.json();
+    if (j["status"] === "error") {
+        document.getElementById("current-game").innerText = "NO CURRENT GAME";
+        return;
+    }
     window.currentGame = j["game_id"];
     if (j["running"] === true) {
+        console.log("Starting game ideally");
         problemNumber = j["latestProblemDone"];
         startGame(false, seed=j["seed"], false);
-        if (j["endTime"] == 0) {
+        if (j["endTime"] === 0) {
             j["endTime"] = Infinity;
         }
         setInterval(function() {
@@ -536,7 +561,10 @@ async function renderName() {
         }
     });
     let name = await response.text();
-    console.log(name);
+    if (name == "") {
+        document.getElementById("username").innerText = "NOT LOGGED IN";
+        return;
+    }
     document.getElementById("username").innerText = name;
 }
 
@@ -549,7 +577,7 @@ async function sendStartRequest() {
     });
     let json = await response.json();
     if (json["status"] === "error") {
-        alert(json["message"]);
+        alert(`Error: ${json["message"]}`);
     }
 }
 
@@ -657,7 +685,7 @@ $(document).ready(function() {
             return;
         }
         startGame(false, seed=json["seed"]);
-        if (json["endTime"] == 0) {
+        if (json["endTime"] === 0) {
             json["endTime"] = Infinity;
         }
         setInterval(function() {
