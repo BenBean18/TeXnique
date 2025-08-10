@@ -583,6 +583,8 @@ async function sendStartRequest() {
 
 // Start by showing the intro.
 $(document).ready(function() {
+    window.timerId = 0;
+
     // Handlers
     $("#start-button-timed").click(function() {
         startGame(true);
@@ -669,7 +671,7 @@ $(document).ready(function() {
 
     renderName();
 
-    setInterval(function() {
+    window.problemTimerId = setInterval(function() {
         Array.prototype.forEach.call(document.getElementsByClassName("problem-time"), function(timer) {
             let startDate = new Date(parseInt(timer.getAttribute("start")) * 1000);
             let elapsed = Math.round((Date.now() - startDate) / 100) / 10;
@@ -688,7 +690,8 @@ $(document).ready(function() {
         if (json["endTime"] === 0) {
             json["endTime"] = Infinity;
         }
-        setInterval(function() {
+        clearInterval(window.timerId);
+        window.timerId = setInterval(function() {
             displayTime(Math.round((new Date(parseFloat(json["endTime"]) * 1000) - Date.now()) / 100) / 10);
         }, 100);
         $("#end-game-button").off("click");
@@ -705,13 +708,19 @@ $(document).ready(function() {
         renderGames();
     });
 
-    window.socket.on('end', (data) => {
+    window.socket.on('end', async (data) => {
         let json = JSON.parse(data);
         console.log("End event received with data", data);
         if (json["game_id"] === window.currentGame) {
             endGame(false);
             $("#today-scores, #month-scores, #all-time-scores").hide();
-            renderLeaderboard(selector="#leaderboard-list", timer=false);
+            await renderLeaderboard(selector="#leaderboard-list", timer=false);
+            clearInterval(window.problemTimerId);
+            Array.prototype.forEach.call(document.getElementsByClassName("problem-time"), function(timer) {
+                let startDate = new Date(parseInt(timer.getAttribute("start")) * 1000);
+                let elapsed = Math.round((Date.now() - startDate) / 100) / 10;
+                timer.innerText = `${elapsed}`;
+            });
         }
     });
 });

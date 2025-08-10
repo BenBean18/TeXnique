@@ -197,8 +197,6 @@ def end_game(game_id: str):
     except KeyError: pass
     try: end_times.pop(game_id)
     except KeyError: pass
-    try: times.pop(game_id)
-    except KeyError: pass
     socketio.emit('end', json.dumps({"game_id": game_id}), namespace="/game")
 
 @app.route("/start", methods=["POST"])
