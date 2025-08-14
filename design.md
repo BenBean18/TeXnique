@@ -27,9 +27,9 @@ Done:
 - [x] Visible feedback for when an action fails (e.g. create, start, delete) instead of silent failure
     - [x] Move start to a request instead of a socket message
 - [x] Allow going back to view previous problems you missed (this is standard already? just click show skipped)
+- [x] Fix the problem where restarting an ended timed game makes it untimed
 
 TODO:
-- [ ] Fix the problem where restarting an ended timed game makes it untimed
 - [ ] Make multiplayer its own button
 - [ ] Make it look nicer
 - [ ] At end of game, show time it took everyone for each individual problem

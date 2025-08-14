@@ -910,5 +910,15 @@ let problems = [
 		"title": "Cartan's magic formula",
 		"description": "A cool little magic trick",
 		"latex": String.raw`\mathcal{L}_X = \mathrm{d} \circ \iota_X + \iota_X \circ \mathrm{d}`
+	},
+	{
+		"title": "Moore-Penrose pseudoinverse",
+		"description": "Remember the diagram?",
+		"latex": String.raw`\mathbf{A}^\dagger = \left(\mathbf{A}^\text{T} \mathbf{A}\right)^{-1}\mathbf{A}^\text{T}`
+	},
+	{
+		"title": "Diagonalization",
+		"description": "Eigenstuff!",
+		"latex": String.raw`\mathbf{A} = \mathbf{S}\mathbf{\Lambda}\mathbf{S}^{-1}`
 	}
 ];
